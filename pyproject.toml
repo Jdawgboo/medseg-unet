@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medseg-unet"
+version = "0.1.0"
+description = "A reproducible U-Net pipeline for binary medical-image segmentation research."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["torch>=2.5,<2.10"]
+license = {file = "LICENSE"}
+authors = [{name = "Jashan Sahasrabudhe"}]
+
+[project.scripts]
+medseg-unet = "medseg_unet.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+[tool.setuptools.packages.find]
+where = ["src"]

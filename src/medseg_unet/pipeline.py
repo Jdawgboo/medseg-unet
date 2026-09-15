@@ -11,6 +11,16 @@ def pair_case_ids(image_ids: set[str], mask_ids: set[str]) -> list[str]:
     if image_ids != mask_ids: raise ValueError(f"image/mask case IDs differ: images_only={sorted(image_ids-mask_ids)}, masks_only={sorted(mask_ids-image_ids)}")
     return sorted(image_ids)
 
+def list_case_ids(data_dir: str | Path) -> tuple[set[str], set[str]]:
+    root = Path(data_dir); image_dir = root / "images"; mask_dir = root / "masks"
+    image_ids = {p.stem for p in image_dir.glob("*.pt")} if image_dir.is_dir() else set()
+    mask_ids = {p.stem for p in mask_dir.glob("*.pt")} if mask_dir.is_dir() else set()
+    return image_ids, mask_ids
+
+def validate_data_dir(data_dir: str | Path) -> list[str]:
+    image_ids, mask_ids = list_case_ids(data_dir)
+    return pair_case_ids(image_ids, mask_ids)
+
 def split_case_ids(case_ids: list[str], seed: int = 17) -> dict[str, list[str]]:
     if len(case_ids) < 5: raise ValueError("at least five paired cases are needed")
     ordered = sorted(case_ids); random.Random(seed).shuffle(ordered)

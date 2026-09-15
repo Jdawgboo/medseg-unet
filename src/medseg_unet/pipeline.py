@@ -6,6 +6,7 @@ import torch
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, TensorDataset
 from .model import UNet
+from .augment import PairedFlipDataset
 
 def pair_case_ids(image_ids: set[str], mask_ids: set[str]) -> list[str]:
     if image_ids != mask_ids: raise ValueError(f"image/mask case IDs differ: images_only={sorted(image_ids-mask_ids)}, masks_only={sorted(mask_ids-image_ids)}")
@@ -29,10 +30,12 @@ def synthetic_cases(seed: int = 17, cases: int = 8, size: int = 32) -> tuple[Ten
 def dice(logits: Tensor, masks: Tensor) -> Tensor:
     predicted = (torch.sigmoid(logits) > .5).float(); return ((2*(predicted*masks).sum((1,2,3)) + 1e-6) / (predicted.sum((1,2,3)) + masks.sum((1,2,3)) + 1e-6)).mean()
 
-def run_synthetic_demo(seed: int = 17, epochs: int = 1) -> tuple[UNet, dict[str, Any]]:
+def run_synthetic_demo(seed: int = 17, epochs: int = 1, augment_train: bool = False, p_horizontal: float = 0.5, p_vertical: float = 0.5) -> tuple[UNet, dict[str, Any]]:
     torch.manual_seed(seed); images, masks, ids = synthetic_cases(seed); splits = split_case_ids(pair_case_ids(set(ids), set(ids)), seed)
     positions = {case: index for index, case in enumerate(ids)}; train_ids, val_ids, test_ids = (splits[key] for key in ("train", "validation", "test"))
-    loader = DataLoader(TensorDataset(images[[positions[x] for x in train_ids]], masks[[positions[x] for x in train_ids]]), batch_size=2, shuffle=True, generator=torch.Generator().manual_seed(seed))
+    train_images, train_masks = (images[[positions[x] for x in train_ids]], masks[[positions[x] for x in train_ids]])
+    train_dataset = (PairedFlipDataset(train_images, train_masks, split="train", seed=seed, p_horizontal=p_horizontal, p_vertical=p_vertical) if augment_train else TensorDataset(train_images, train_masks))
+    loader = DataLoader(train_dataset, batch_size=2, shuffle=True, generator=torch.Generator().manual_seed(seed))
     model=UNet(); optimizer=torch.optim.Adam(model.parameters(), lr=.001); loss_fn=nn.BCEWithLogitsLoss(); history=[]
     for epoch in range(epochs):
         model.train(); total=0.

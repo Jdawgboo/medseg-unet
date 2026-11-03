@@ -32,7 +32,13 @@ images/<case_id>.pt
 masks/<case_id>.pt
 ```
 
-Every case ID must have exactly one image and mask. Keep all augmented crops and slices from one case in the same split. Do not commit patient data, datasets, or unverified weights.
+Every case ID must have exactly one image and mask. Check this before training:
+
+```bash
+medseg-unet validate-pairs --data path/to/data
+```
+
+It lists image-only and mask-only case IDs and exits non-zero if any pair is missing. Keep all augmented crops and slices from one case in the same split. Do not commit patient data, datasets, or unverified weights.
 
 Any real result must ship with dataset/version/license, split manifest, preprocessing details, seed, command, metrics, and known limitations. A bare Dice score is not sufficient.
 

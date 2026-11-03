@@ -11,6 +11,19 @@ def pair_case_ids(image_ids: set[str], mask_ids: set[str]) -> list[str]:
     if image_ids != mask_ids: raise ValueError(f"image/mask case IDs differ: images_only={sorted(image_ids-mask_ids)}, masks_only={sorted(mask_ids-image_ids)}")
     return sorted(image_ids)
 
+def validate_case_dir(root: str | Path) -> tuple[list[str], list[str], list[str]]:
+    """Compare ``images/<case_id>.pt`` and ``masks/<case_id>.pt`` under ``root``.
+
+    Returns ``(paired, image_only, mask_only)`` as sorted case-ID lists.
+    """
+    base = Path(root)
+    ids = {}
+    for name in ("images", "masks"):
+        folder = base / name
+        if not folder.is_dir(): raise FileNotFoundError(f"missing '{name}' folder in {base}")
+        ids[name] = {path.stem for path in folder.glob("*.pt")}
+    return sorted(ids["images"] & ids["masks"]), sorted(ids["images"] - ids["masks"]), sorted(ids["masks"] - ids["images"])
+
 def split_case_ids(case_ids: list[str], seed: int = 17) -> dict[str, list[str]]:
     if len(case_ids) < 5: raise ValueError("at least five paired cases are needed")
     ordered = sorted(case_ids); random.Random(seed).shuffle(ordered)
